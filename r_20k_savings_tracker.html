@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Projeto R$ 20K - Rastreador de Metas</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class', // Enables dark mode toggling via a CSS class
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        primary: {
+                            50: '#ecfdf5',
+                            100: '#d1fae5',
+                            200: '#a7f3d0',
+                            300: '#6ee7b7',
+                            400: '#34d399',
+                            500: '#10b981',
+                            600: '#059669',
+                            700: '#047857',
+                            800: '#065f46',
+                            900: '#064e3b',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Custom styles for animations and specific elements */
+        .progress-bar-fill {
+            transition: width 1s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        /* Hide scrollbar for transaction list but allow scroll */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;  /* IE and Edge */
+            scrollbar-width: none;  /* Firefox */
+        }
+    </style>
+    <!-- Prevent Flash of Unstyled Content (FOUC) for Dark Mode -->
+    <script>
+        if (localStorage.getItem('color-theme') === 'dark' || (!('color-theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            document.documentElement.classList.add('dark');
+        } else {
+            document.documentElement.classList.remove('dark')
+        }
+    </script>
+</head>
+<body class="min-h-screen flex flex-col font-sans antialiased bg-gray-50 text-gray-800 dark:bg-gray-900 dark:text-gray-200 transition-colors duration-300">
+
+    <!-- Header -->
+    <header class="bg-white dark:bg-gray-800 shadow-sm dark:shadow-none dark:border-b dark:border-gray-700 sticky top-0 z-10 transition-colors duration-300">
+        <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center gap-2">
+                <svg class="w-8 h-8 text-primary-600 dark:text-primary-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                <h1 class="text-xl font-bold text-gray-900 dark:text-white tracking-tight">Projeto <span class="text-primary-600 dark:text-primary-400">R$ 20K</span></h1>
+            </div>
+            <div class="flex items-center gap-4">
+                <div class="text-sm text-gray-500 dark:text-gray-400 font-medium hidden sm:block" id="header-date">
+                    <!-- Date inserted via JS -->
+                </div>
+                <!-- Theme Toggle Button -->
+                <button id="theme-toggle" type="button" class="text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none rounded-lg text-sm p-2 transition-colors">
+                    <svg id="theme-toggle-dark-icon" class="hidden w-5 h-5" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"></path></svg>
+                    <svg id="theme-toggle-light-icon" class="hidden w-5 h-5" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z" fill-rule="evenodd" clip-rule="evenodd"></path></svg>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="flex-grow max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 w-full">
+        
+        <!-- Summary Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6 mb-6 sm:mb-8">
+            <!-- Goal Card -->
+            <div class="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-sm border border-gray-100 dark:border-gray-700 flex flex-col justify-center transition-colors duration-300">
+                <p class="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Meta Total</p>
+                <h2 class="text-3xl font-bold text-gray-900 dark:text-white">R$ 20.000,00</h2>
+                <div class="mt-2 text-sm text-gray-500 dark:text-gray-400 flex items-center gap-1">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                    <span id="target-date-display">Carregando...</span>
+                </div>
+            </div>
+
+            <!-- Saved Card -->
+            <div class="bg-gradient-to-br from-primary-500 to-primary-700 dark:from-primary-600 dark:to-primary-900 rounded-2xl p-6 shadow-md text-white flex flex-col justify-center relative overflow-hidden transition-colors duration-300">
+                <div class="absolute top-0 right-0 -mt-4 -mr-4 w-24 h-24 bg-white opacity-10 rounded-full blur-xl"></div>
+                <p class="text-sm font-medium text-primary-100 dark:text-primary-200 mb-1">Valor Poupado</p>
+                <h2 class="text-3xl font-bold" id="saved-amount-display">R$ 0,00</h2>
+                <div class="mt-2 text-sm text-primary-100 dark:text-primary-200 font-medium" id="saved-percentage-display">
+                    0% da meta
+                </div>
+            </div>
+
+            <!-- Remaining Card -->
+            <div class="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-sm border border-gray-100 dark:border-gray-700 flex flex-col justify-center transition-colors duration-300">
+                <p class="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Falta Poupar</p>
+                <h2 class="text-3xl font-bold text-gray-900 dark:text-white" id="remaining-amount-display">R$ 20.000,00</h2>
+                <div class="mt-2 text-sm text-amber-600 dark:text-amber-400 font-medium bg-amber-50 dark:bg-amber-900/30 inline-block px-2 py-1 rounded-md self-start transition-colors" id="monthly-target-display">
+                    Meta: R$ 0,00 / mês
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Progress Section -->
+        <div class="bg-white dark:bg-gray-800 rounded-2xl p-5 sm:p-8 shadow-sm border border-gray-100 dark:border-gray-700 mb-6 sm:mb-8 transition-colors duration-300">
+            <div class="flex justify-between items-end mb-4">
+                <div>
+                    <h3 class="text-lg font-bold text-gray-900 dark:text-white">Progresso da Meta</h3>
+                    <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Acompanhe sua jornada até os 20 mil.</p>
+                </div>
+                <div class="text-right">
+                    <span class="text-2xl font-bold text-primary-600 dark:text-primary-400" id="main-percentage-text">0%</span>
+                </div>
+            </div>
+            
+            <!-- Progress Bar -->
+            <div class="relative w-full h-6 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden shadow-inner transition-colors duration-300">
+                <div id="main-progress-bar" class="progress-bar-fill absolute top-0 left-0 h-full bg-gradient-to-r from-primary-400 to-primary-600 dark:from-primary-500 dark:to-primary-700 rounded-full w-0 flex items-center justify-end px-2">
+                    <!-- Optional: Sparkles or inner styling -->
+                </div>
+            </div>
+            
+            <!-- Timeline details -->
+            <div class="flex justify-between mt-3 text-xs font-medium text-gray-400 dark:text-gray-500">
+                <span id="start-date-display">Início</span>
+                <span>R$ 10K</span>
+                <span>R$ 20K</span>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8">
+            
+            <!-- Transaction Form -->
+            <div class="lg:col-span-1">
+                <div class="bg-white dark:bg-gray-800 rounded-2xl p-5 sm:p-6 shadow-sm border border-gray-100 dark:border-gray-700 lg:sticky lg:top-24 transition-colors duration-300">
+                    <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-4">Nova Transação</h3>
+                    
+                    <!-- Notification Banner (Hidden by default) -->
+                    <div id="notification" class="hidden mb-4 p-3 rounded-lg text-sm font-medium transition-all duration-300"></div>
+
+                    <form id="transaction-form" class="space-y-4">
+                        <div>
+                            <label for="type" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Tipo</label>
+                            <select id="type" class="w-full border-gray-300 dark:border-gray-600 rounded-lg shadow-sm p-2.5 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white text-base sm:text-sm focus:ring-primary-500 focus:border-primary-500 outline-none transition-colors duration-200">
+                                <option value="deposit">Depósito (+)</option>
+                                <option value="withdrawal">Retirada (-)</option>
+                            </select>
+                        </div>
+                        
+                        <div>
+                            <label for="amount" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Valor (R$)</label>
+                            <div class="relative">
+                                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                    <span class="text-gray-500 dark:text-gray-400 sm:text-sm">R$</span>
+                                </div>
+                                <input type="number" id="amount" step="0.01" min="0.01" required class="w-full pl-10 border-gray-300 dark:border-gray-600 rounded-lg shadow-sm p-2.5 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white text-base sm:text-sm focus:ring-primary-500 focus:border-primary-500 outline-none transition-colors duration-200" placeholder="0,00">
+                            </div>
+                        </div>
+
+                        <div>
+                            <label for="desc" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Descrição (Opcional)</label>
+                            <input type="text" id="desc" class="w-full border-gray-300 dark:border-gray-600 rounded-lg shadow-sm p-2.5 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white text-base sm:text-sm focus:ring-primary-500 focus:border-primary-500 outline-none transition-colors duration-200" placeholder="Ex: Salário, Economia...">
+                        </div>
+
+                        <button type="submit" class="w-full bg-primary-600 hover:bg-primary-700 dark:bg-primary-500 dark:hover:bg-primary-600 text-white font-bold py-3 px-4 rounded-lg shadow-md transition-colors duration-200 flex justify-center items-center gap-2">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
+                            Adicionar Valor
+                        </button>
+                    </form>
+
+                    <div class="mt-6 pt-6 border-t border-gray-100 dark:border-gray-700">
+                        <button id="reset-btn" class="w-full text-red-500 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 text-sm font-medium transition-colors">
+                            Zerar e reiniciar projeto
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Transaction History -->
+            <div class="lg:col-span-2">
+                <div class="bg-white dark:bg-gray-800 rounded-2xl p-5 sm:p-6 shadow-sm border border-gray-100 dark:border-gray-700 h-full flex flex-col transition-colors duration-300">
+                    <div class="flex justify-between items-center mb-6">
+                        <h3 class="text-lg font-bold text-gray-900 dark:text-white">Histórico de Transações</h3>
+                        <span class="text-xs sm:text-sm bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 py-1 px-3 rounded-full font-medium transition-colors" id="transaction-count">0 registros</span>
+                    </div>
+
+                    <!-- List Container -->
+                    <div class="flex-grow overflow-y-auto no-scrollbar pr-1 sm:pr-2 max-h-[400px] sm:max-h-[500px]">
+                        <div id="transaction-list" class="space-y-3">
+                            <!-- Transactions will be injected here via JS -->
+                            <div class="text-center py-10 text-gray-500 dark:text-gray-400" id="empty-state">
+                                <svg class="w-12 h-12 mx-auto text-gray-300 dark:text-gray-600 mb-3 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                <p>Nenhuma transação ainda.</p>
+                                <p class="text-sm">Faça seu primeiro depósito para começar!</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // --- Constants & Global Variables ---
+        const GOAL_AMOUNT = 20000;
+        const PROJECT_DURATION_MONTHS = 24;
+        const STORAGE_KEY = 'rs20k_project_data';
+
+        let appData = {
+            startDate: null,
+            endDate: null,
+            transactions: [] // { id, type, amount, date, desc }
+        };
+
+        // --- DOM Elements ---
+        const els = {
+            headerDate: document.getElementById('header-date'),
+            targetDateDisplay: document.getElementById('target-date-display'),
+            savedAmountDisplay: document.getElementById('saved-amount-display'),
+            savedPercentageDisplay: document.getElementById('saved-percentage-display'),
+            remainingAmountDisplay: document.getElementById('remaining-amount-display'),
+            monthlyTargetDisplay: document.getElementById('monthly-target-display'),
+            mainPercentageText: document.getElementById('main-percentage-text'),
+            mainProgressBar: document.getElementById('main-progress-bar'),
+            startDateDisplay: document.getElementById('start-date-display'),
+            transactionForm: document.getElementById('transaction-form'),
+            transactionList: document.getElementById('transaction-list'),
+            emptyState: document.getElementById('empty-state'),
+            transactionCount: document.getElementById('transaction-count'),
+            notification: document.getElementById('notification'),
+            resetBtn: document.getElementById('reset-btn')
+        };
+
+        // --- Utility Functions ---
+        const formatCurrency = (value) => {
+            return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
+        };
+
+        const formatDate = (dateString) => {
+            const options = { year: 'numeric', month: 'short', day: 'numeric' };
+            return new Date(dateString).toLocaleDateString('pt-BR', options);
+        };
+
+        const showNotification = (message, type = 'success') => {
+            els.notification.textContent = message;
+            els.notification.classList.remove('hidden', 'bg-green-100', 'text-green-800', 'bg-red-100', 'text-red-800', 'dark:bg-green-900/40', 'dark:text-green-400', 'dark:bg-red-900/40', 'dark:text-red-400');
+            
+            if (type === 'success') {
+                els.notification.classList.add('bg-green-100', 'text-green-800', 'dark:bg-green-900/40', 'dark:text-green-400');
+            } else {
+                els.notification.classList.add('bg-red-100', 'text-red-800', 'dark:bg-red-900/40', 'dark:text-red-400');
+            }
+            
+            setTimeout(() => {
+                els.notification.classList.add('hidden');
+            }, 3000);
+        };
+
+        // --- Core Logic ---
+        const loadData = () => {
+            const stored = localStorage.getItem(STORAGE_KEY);
+            if (stored) {
+                appData = JSON.parse(stored);
+            } else {
+                // Initialize new project
+                const now = new Date();
+                const endDate = new Date(now);
+                endDate.setMonth(endDate.getMonth() + PROJECT_DURATION_MONTHS);
+                
+                appData = {
+                    startDate: now.toISOString(),
+                    endDate: endDate.toISOString(),
+                    transactions: []
+                };
+                saveData();
+            }
+        };
+
+        const saveData = () => {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(appData));
+        };
+
+        const calculateTotals = () => {
+            let total = 0;
+            appData.transactions.forEach(t => {
+                if (t.type === 'deposit') {
+                    total += t.amount;
+                } else if (t.type === 'withdrawal') {
+                    total -= t.amount;
+                }
+            });
+            // Prevent negative total visually if withdrawals exceed deposits
+            return total < 0 ? 0 : total;
+        };
+
+        const calculateMonthlyTarget = (remainingAmount) => {
+            const now = new Date();
+            const end = new Date(appData.endDate);
+            
+            // Calculate remaining months
+            let monthsLeft = (end.getFullYear() - now.getFullYear()) * 12;
+            monthsLeft -= now.getMonth();
+            monthsLeft += end.getMonth();
+            
+            // If we are past the date or exactly 0 months left, avoid division by zero
+            if (monthsLeft <= 0) monthsLeft = 1; 
+
+            const target = remainingAmount / monthsLeft;
+            return target > 0 ? target : 0;
+        };
+
+        // --- UI Updates ---
+        const updateUI = () => {
+            const totalSaved = calculateTotals();
+            const remaining = Math.max(0, GOAL_AMOUNT - totalSaved);
+            const percentage = Math.min(100, (totalSaved / GOAL_AMOUNT) * 100);
+            const monthlyTarget = calculateMonthlyTarget(remaining);
+
+            // Update Cards
+            els.savedAmountDisplay.textContent = formatCurrency(totalSaved);
+            els.remainingAmountDisplay.textContent = formatCurrency(remaining);
+            els.savedPercentageDisplay.textContent = `${percentage.toFixed(1)}% da meta alcançada`;
+            els.monthlyTargetDisplay.textContent = `Meta: ${formatCurrency(monthlyTarget)} / mês restante`;
+            
+            // Update Progress Bar
+            els.mainPercentageText.textContent = `${Math.floor(percentage)}%`;
+            els.mainProgressBar.style.width = `${percentage}%`;
+
+            // Update Dates
+            els.headerDate.textContent = `Hoje: ${formatDate(new Date())}`;
+            els.targetDateDisplay.textContent = `Alvo: ${formatDate(appData.endDate)}`;
+            els.startDateDisplay.textContent = `Início: ${formatDate(appData.startDate)}`;
+
+            // Render Transactions
+            renderTransactions();
+        };
+
+        const renderTransactions = () => {
+            els.transactionList.innerHTML = '';
+            els.transactionCount.textContent = `${appData.transactions.length} registros`;
+
+            if (appData.transactions.length === 0) {
+                els.transactionList.appendChild(els.emptyState);
+                els.emptyState.classList.remove('hidden');
+                return;
+            }
+
+            els.emptyState.classList.add('hidden');
+
+            // Sort by newest first
+            const sortedTx = [...appData.transactions].sort((a, b) => new Date(b.date) - new Date(a.date));
+
+            sortedTx.forEach(tx => {
+                const isDeposit = tx.type === 'deposit';
+                const icon = isDeposit 
+                    ? `<svg class="w-5 h-5 text-green-500 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 11l5-5m0 0l5 5m-5-5v12"></path></svg>`
+                    : `<svg class="w-5 h-5 text-red-500 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 13l-5 5m0 0l-5-5m5 5V6"></path></svg>`;
+                
+                const amountClass = isDeposit ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400';
+                const sign = isDeposit ? '+' : '-';
+
+                const div = document.createElement('div');
+                div.className = 'flex items-center justify-between p-3 sm:p-4 bg-gray-50 dark:bg-gray-700/50 rounded-xl border border-gray-100 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors';
+                div.innerHTML = `
+                    <div class="flex items-center gap-3 sm:gap-4">
+                        <div class="p-2 bg-white dark:bg-gray-600 rounded-lg shadow-sm border border-gray-100 dark:border-gray-500 transition-colors">
+                            ${icon}
+                        </div>
+                        <div>
+                            <p class="text-sm font-bold text-gray-900 dark:text-white">${tx.desc || (isDeposit ? 'Depósito' : 'Retirada')}</p>
+                            <p class="text-xs text-gray-500 dark:text-gray-400">${formatDate(tx.date)}</p>
+                        </div>
+                    </div>
+                    <div class="text-right flex items-center gap-2 sm:gap-4">
+                        <span class="font-bold text-sm sm:text-base ${amountClass}">${sign} ${formatCurrency(tx.amount)}</span>
+                        <button onclick="deleteTransaction('${tx.id}')" class="text-gray-400 dark:text-gray-500 hover:text-red-500 dark:hover:text-red-400 transition-colors p-1" title="Remover">
+                            <svg class="w-5 h-5 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                        </button>
+                    </div>
+                `;
+                els.transactionList.appendChild(div);
+            });
+        };
+
+        // --- Event Handlers ---
+        els.transactionForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            
+            const type = document.getElementById('type').value;
+            const amountInput = document.getElementById('amount').value;
+            const desc = document.getElementById('desc').value.trim();
+            
+            const amount = parseFloat(amountInput);
+
+            if (isNaN(amount) || amount <= 0) {
+                showNotification('Por favor, insira um valor válido.', 'error');
+                return;
+            }
+
+            const transaction = {
+                id: Date.now().toString(),
+                type,
+                amount,
+                desc,
+                date: new Date().toISOString()
+            };
+
+            appData.transactions.push(transaction);
+            saveData();
+            updateUI();
+            
+            els.transactionForm.reset();
+            showNotification('Transação adicionada com sucesso!');
+        });
+
+        // Expose to window so inline onclick works
+        window.deleteTransaction = (id) => {
+            appData.transactions = appData.transactions.filter(t => t.id !== id);
+            saveData();
+            updateUI();
+            showNotification('Transação removida.', 'success');
+        };
+
+        els.resetBtn.addEventListener('click', () => {
+            const sure = document.createElement('div');
+            sure.className = "fixed inset-0 bg-gray-900/50 dark:bg-gray-900/80 flex items-center justify-center z-50 backdrop-blur-sm transition-all";
+            sure.innerHTML = `
+                <div class="bg-white dark:bg-gray-800 p-6 rounded-2xl max-w-sm w-full mx-4 shadow-xl border border-transparent dark:border-gray-700">
+                    <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-2">Zerar Projeto?</h3>
+                    <p class="text-sm text-gray-500 dark:text-gray-400 mb-6">Esta ação apagará todo o seu histórico e reiniciará a meta de 2 anos a partir de hoje. Não pode ser desfeito.</p>
+                    <div class="flex gap-3 justify-end">
+                        <button id="cancel-reset" class="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">Cancelar</button>
+                        <button id="confirm-reset" class="px-4 py-2 text-sm font-medium text-white bg-red-500 dark:bg-red-600 rounded-lg hover:bg-red-600 dark:hover:bg-red-700 transition-colors">Sim, Zerar Tudo</button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(sure);
+
+            document.getElementById('cancel-reset').addEventListener('click', () => {
+                sure.remove();
+            });
+
+            document.getElementById('confirm-reset').addEventListener('click', () => {
+                localStorage.removeItem(STORAGE_KEY);
+                loadData(); // Re-initializes with today's date
+                updateUI();
+                sure.remove();
+                showNotification('Projeto reiniciado com sucesso.');
+            });
+        });
+
+        // --- Theme Toggle Logic ---
+        const themeToggleBtn = document.getElementById('theme-toggle');
+        const themeToggleDarkIcon = document.getElementById('theme-toggle-dark-icon');
+        const themeToggleLightIcon = document.getElementById('theme-toggle-light-icon');
+
+        // Initial setup for the button icons
